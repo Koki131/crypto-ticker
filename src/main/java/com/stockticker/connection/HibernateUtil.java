@@ -11,6 +11,7 @@ public class HibernateUtil {
 
     static {
         factory = new Configuration().configure("hibernate.cfg.xml").addAnnotatedClass(Search.class).buildSessionFactory();
+        
         // Runtime shutdown hook to close the SessionFactory when the application is shutting down
         Runtime.getRuntime().addShutdownHook(new Thread(factory::close));
     }
