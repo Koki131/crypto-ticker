@@ -1,4 +1,4 @@
-package com.stockticker.demo;
+package com.stockticker.model;
 
 import java.util.List;
 

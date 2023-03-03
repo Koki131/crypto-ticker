@@ -56,6 +56,8 @@ import com.stockticker.connection.HibernateUtil;
 import com.stockticker.dao.SearchDAO;
 import com.stockticker.dao.SearchDAOImpl;
 import com.stockticker.entity.Search;
+import com.stockticker.model.Coin;
+import com.stockticker.model.CoinMarketData;
 
 
 public class App {
@@ -79,7 +81,7 @@ public class App {
 	
 	private static List<String> selectedTextList = new ArrayList<>();
 	
-	private static Map<String, String> coinSearch = new HashMap<>();
+	private static Map<String, String> coinSearch = new HashMap<>(); 
 	
 	private static SearchDAO searchDao = new SearchDAOImpl();
 	
@@ -94,7 +96,7 @@ public class App {
 	
 	
 	public App() {
-		
+		 
 		
 		headers = new HttpHeaders();
 	
@@ -116,12 +118,11 @@ public class App {
         panel.setBackground(Color.WHITE);
         
         JPanel intervalPanel = new JPanel();
-
         JPanel intervalTextPanel = new JPanel();
         
         JLabel inputLabel = new JLabel("Enter Coin Name:");
         JTextField inputField = new JTextField(20);
-        JButton submitButton = new JButton("Search");
+        JButton searchButton = new JButton("Search");
         
         JButton startMonitoring = new JButton("Start Monitoring");
         
@@ -150,9 +151,10 @@ public class App {
         
         JComboBox<String> trendBox = new JComboBox<>();
         comboBox.setEditable(false);
+        
         populateTrendBox(trendBox);
         
-        JButton undo = new JButton("Undo");
+        JButton undoButton = new JButton("Undo");
         
         JLabel interval = new JLabel("Interval (sec):");
         JTextField intervalField = new JTextField(5);
@@ -161,8 +163,170 @@ public class App {
         
         
         
+        panel.add(inputLabel);
+        panel.add(inputField);
+        panel.add(startMonitoring);
+        panel.add(searchButton);
+        panel.add(comboBox);
+        panel.add(scrollPane);
+        panel.add(trendLabel);
+        panel.add(undoButton);
+        panel.add(trendBox);
+        intervalPanel.add(interval);
+        intervalPanel.add(intervalField);
+        intervalPanel.add(intervalSubmit);
+        intervalTextPanel.add(defaultInterval);
+        panel.add(intervalPanel);
+        panel.add(intervalTextPanel);
+        frame.add(panel);
+        frame.setVisible(true);
         
-        submitButton.addActionListener(new ActionListener() {
+        
+        searchForCoins(searchButton, comboBox, inputField);
+        
+        populateComboBox(comboBox, selected, startMonitoring, undoButton);
+              
+        undo(undoButton, selected, startMonitoring);
+        
+        trend(trendBox);
+        
+        startMonitoring(startMonitoring, frame, edit);
+        
+        interval(intervalSubmit, intervalField);
+         
+        
+    }
+    
+    public static void interval(JButton intervalSubmit, JTextField intervalField) {
+    	
+    	intervalSubmit.addActionListener(new ActionListener() {
+        	
+        	@Override
+        	public void actionPerformed(ActionEvent e) {
+        		
+        		intervalText.setLength(0);
+        		
+        		String input = intervalField.getText();
+        		
+        		try {
+        			
+        			int intInput = Integer.parseInt(input);
+        			intervalText.append(input);
+        			JOptionPane.showInternalMessageDialog(null, "Interval set to " + intInput + " seconds");
+        			
+        		} catch (Exception ex) {
+        			
+        			intervalField.setText("");
+        			JOptionPane.showInternalMessageDialog(null, "Must be a number");
+        			
+        			
+        		}
+        			
+        		
+        	}
+        });
+    	
+    }
+    
+    
+    public static void trend(JComboBox<String> trendBox) {
+    	
+    	trendBox.setSelectedItem("24h");
+       	
+        trend.append("24h");
+        
+        trendBox.addActionListener(new ActionListener() {
+        	
+        	@Override
+        	public void actionPerformed(ActionEvent e) {
+        		
+        		String selectedTrend = (String) trendBox.getSelectedItem();
+        		
+        		trend.setLength(0);
+        		
+        		trend.append(selectedTrend);
+        			
+        	}
+        	
+        });
+    	
+    }
+    
+    
+    public static void undo(JButton undoButton, JTextArea selected, JButton startMonitoring) {
+    	
+    	undoButton.setEnabled(false);
+        
+        undoButton.addActionListener(new ActionListener() {
+        	
+        	@Override
+        	public void actionPerformed(ActionEvent e) {
+        		
+        		
+        		
+        		ids.delete(ids.length() - idsList.get(idsList.size()-1).length(), ids.length());
+        		selectedText.delete(selectedText.length() - selectedTextList.get(selectedTextList.size()-1).length(), selectedText.length());
+        		
+        		idsList.remove(idsList.size()-1);
+        		selectedTextList.remove(selectedTextList.size()-1);
+        		
+        		selected.setText(selectedText.toString());
+        		
+        		if (ids.length() < 1) {
+
+                	startMonitoring.setEnabled(false);
+                	undoButton.setEnabled(false);
+                }
+        		
+        	}
+        	
+        });
+    	
+    }
+    
+    
+    public static void populateComboBox(JComboBox<String> comboBox, JTextArea selected, JButton startMonitoring, JButton undo) {
+    	
+    	 comboBox.addActionListener(new ActionListener() {
+         	
+         	
+         	@Override
+             public void actionPerformed(ActionEvent e) {
+         		
+                 String selectedCoin = (String) comboBox.getSelectedItem();
+                 String selectedUuid = coinSearch.get(selectedCoin);
+
+                 if (selectedUuid != null) {
+                 	
+                 	ids.append("&uuids[]=" + selectedUuid);
+                 	idsList.add("&uuids[]=" + selectedUuid);
+                 	
+                 	selectedText.append(selectedCoin + "\n");
+                 	selectedTextList.add(selectedCoin + "\n");
+                 	selected.setText(selectedText.toString());
+                 	
+                 	
+                 } 
+                 
+                 
+                 if (ids.length() >= 1) {
+                 	System.out.println("IDS: " + ids);
+                 	startMonitoring.setEnabled(true);
+                 	undo.setEnabled(true);
+                 }
+                 
+              
+                 
+             }
+         });
+    	
+    }
+    
+    
+    public static void searchForCoins(JButton searchButton, JComboBox<String> comboBox, JTextField inputField) {
+    	
+    	
+    	searchButton.addActionListener(new ActionListener() {
         	
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -192,93 +356,15 @@ public class App {
                  
             }
         });
+    	
+    }
+    
+    
+    public static void startMonitoring(JButton startMonitoring, JFrame frame, JButton edit) {
         
-        comboBox.addActionListener(new ActionListener() {
-        	
-        	
-        	@Override
-            public void actionPerformed(ActionEvent e) {
-        		
-                String selectedCoin = (String) comboBox.getSelectedItem();
-                String selectedUuid = coinSearch.get(selectedCoin);
-
-                if (selectedUuid != null) {
-                	
-                	ids.append("&uuids[]=" + selectedUuid);
-                	idsList.add("&uuids[]=" + selectedUuid);
-                	
-                	selectedText.append(selectedCoin + "\n");
-                	selectedTextList.add(selectedCoin + "\n");
-                	selected.setText(selectedText.toString());
-                	
-                	
-                } 
-                
-                
-                if (ids.length() >= 1) {
-                	System.out.println("IDS: " + ids);
-                	startMonitoring.setEnabled(true);
-                	undo.setEnabled(true);
-                }
-                
-             
-                
-            }
-        });
-        
-        undo.setEnabled(false);
-        
-        undo.addActionListener(new ActionListener() {
-        	
-        	@Override
-        	public void actionPerformed(ActionEvent e) {
-        		
-        		
-        		
-        		ids.delete(ids.length() - idsList.get(idsList.size()-1).length(), ids.length());
-        		selectedText.delete(selectedText.length() - selectedTextList.get(selectedTextList.size()-1).length(), selectedText.length());
-        		
-        		idsList.remove(idsList.size()-1);
-        		selectedTextList.remove(selectedTextList.size()-1);
-        		
-        		selected.setText(selectedText.toString());
-        		
-        		if (ids.length() < 1) {
-
-                	startMonitoring.setEnabled(false);
-                	undo.setEnabled(false);
-                }
-        		
-        	}
-        	
-        });
-        
-        
-        
-        trendBox.setSelectedItem("24h");
-       	
-        trend.append("24h");
-        
-        trendBox.addActionListener(new ActionListener() {
-        	
-        	@Override
-        	public void actionPerformed(ActionEvent e) {
-        		
-        		String selectedTrend = (String) trendBox.getSelectedItem();
-        		
-        		trend.setLength(0);
-        		
-        		trend.append(selectedTrend);
-        			
-        	}
-        	
-        });
-
-        
-        
-        startMonitoring.setEnabled(false);
-        
-        startMonitoring.addActionListener(new ActionListener() {
+    	startMonitoring.setEnabled(false);
+    	
+   	 	startMonitoring.addActionListener(new ActionListener() {
 
             // declare worker as a field
             private SwingWorker<Void, String> worker;
@@ -335,91 +421,36 @@ public class App {
                 worker.execute();
             }
         });
-        
-        intervalSubmit.addActionListener(new ActionListener() {
-        	
-        	@Override
-        	public void actionPerformed(ActionEvent e) {
-        		
-        		intervalText.setLength(0);
-        		
-        		String input = intervalField.getText();
-        		
-        		try {
-        			
-        			int intInput = Integer.parseInt(input);
-        			intervalText.append(input);
-        			JOptionPane.showInternalMessageDialog(null, "Interval set to " + intInput + " seconds");
-        			
-        		} catch (Exception ex) {
-        			
-        			intervalField.setText("");
-        			JOptionPane.showInternalMessageDialog(null, "Must be a number");
-        			
-        			
-        		}
-        			
-        		
-        	}
-        });
-        
-        
-        panel.add(inputLabel);
-        panel.add(inputField);
-        panel.add(startMonitoring);
-        panel.add(submitButton);
-        panel.add(comboBox);
-        panel.add(scrollPane);
-        panel.add(trendLabel);
-        panel.add(undo);
-        panel.add(trendBox);
-        intervalPanel.add(interval);
-        intervalPanel.add(intervalField);
-        intervalPanel.add(intervalSubmit);
-        intervalTextPanel.add(defaultInterval);
-        panel.add(intervalPanel);
-        panel.add(intervalTextPanel);
-        frame.add(panel);
-        frame.setVisible(true);
-        
+   	
     }
+    
     
     public static void monitorCoins(JLabel label, JFrame existingWindow, JButton editButton) throws InterruptedException {
     	
     	
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        JPanel panel = new JPanel(new GridLayout(0, 2, 10, 10));
+        JPanel monitoringPanel = new JPanel(new GridLayout(0, 2, 10, 10));
         
-        existingWindow.add(panel, BorderLayout.CENTER);
+        existingWindow.add(monitoringPanel, BorderLayout.CENTER);
         
-        
-        
+         
         while (true) {
         	
-        	
-        	
-            ResponseEntity<String> response = restTemplate.exchange(
-                    "https://api.coinranking.com/v2/coins?" + ids.toString() + "&timePeriod=" + trend.toString(),
-                    HttpMethod.GET, entity, String.class);
+            CoinMarketData coins = getCoinData(entity);
 
-            Gson gson = new Gson();
-
-            JsonObject jsonObject = gson.fromJson(response.getBody(), JsonObject.class);
-            JsonObject dataObject = jsonObject.getAsJsonObject("data");
-
-            CoinMarketData coins = gson.fromJson(dataObject, CoinMarketData.class);
-            
-            panel.removeAll(); 
+            monitoringPanel.removeAll(); 
 
             for (Coin coin : coins.getCoins()) {
 
-                double[] sparkline = coin.getSparkline(); 
-                TimeSeries series = new TimeSeries(coin.getSymbol()); 
-                
-                double max = sparkline[0];
+            	double[] sparkline = coin.getSparkline(); 
+            	
+            	double max = sparkline[0];
                 double min = sparkline[0];
+            	
                 
+                TimeSeries series = new TimeSeries(coin.getSymbol()); 
+
                 for (int i = 0; i < sparkline.length; i++) {
                 	
                     Date date = new Date(System.currentTimeMillis() - (sparkline.length - i) * 60000); 
@@ -430,79 +461,14 @@ public class App {
                     
                 }
                 
-                
-                TimeSeriesCollection dataset = new TimeSeriesCollection(series); 
 
-                JFreeChart chart = ChartFactory.createTimeSeriesChart(
-                        null, 
-                        null, 
-                        null, 
-                        dataset, 
-                        false, 
-                        false, 
-                        false 
-                );
-
-                XYPlot plot = (XYPlot) chart.getPlot(); 
-                panel.setBackground(Color.WHITE);
-                plot.setBackgroundPaint(panel.getBackground()); 
-                plot.setDomainGridlinePaint(Color.LIGHT_GRAY); 
-                plot.setRangeGridlinePaint(Color.LIGHT_GRAY); 
-                plot.setOutlinePaint(null); 
-                
-                if (coin.getChange() > 0) {
-                	
-                	XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer) plot.getRenderer();
-                    renderer.setSeriesPaint(0, Color.GREEN);
-                
-                } else {
-                
-                	XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer) plot.getRenderer();
-                    renderer.setSeriesPaint(0, Color.RED);
-                
-                }
-                
-                
-                
-                plot.getDomainAxis().setVisible(false);
-                
-
-                ChartPanel chartPanel = new ChartPanel(chart);
+                ChartPanel chartPanel = new ChartPanel(populateChart(series, monitoringPanel, coin));
                 chartPanel.setPreferredSize(new Dimension(200, 100)); 
 
                 JPanel chartPanelWrapper = new JPanel(new BorderLayout());
                 chartPanelWrapper.add(chartPanel, BorderLayout.CENTER);
 
-                double coinPrice = Double.valueOf(coin.getPrice());
-                String result = String.format("%.4f", coinPrice);
-                
-                String minStr = String.format("%.4f", min);
-                String maxStr = String.format("%.4f", max);
-                
-                String labelHtml = "<html>" +
-                
-                		"<span style=\"font-weight:bold; color: " + coin.getColor() + ";\">" + " " + coin.getSymbol() + ": " + "</span>" + 
-                		
-                		"<span style=\"color: " + (coin.getChange() < 0 ? "red" : "green") + ";\">&nbsp;" + result + "</span>  " +  
-                		
-                		"<br><span style=\"font-weight:bold; color: blue; \"> Change:</span> <span style=\"color: " + 
 
-                		(coin.getChange() < 0 ? "red" : "green") + ";\">&nbsp;" + coin.getChange() + " % </span>" +
-                		
-                		"<br><span style=\"font-weight:bold; color: green; \">High:</span>" + 
-                		
-                		"<span> &nbsp;" + maxStr + "</span>" +
-						
-						"<span style=\"font-weight:bold; color: red;\">&nbsp;&nbsp;Low:</span> &nbsp;" + minStr +
-                        
-                		"</html>";
-                
-                
-                
-                
-                
-                
-                // adding alarm for individual coin
                 
                 JButton alarmButton = new JButton("Alarm");
                 alarmButton.setPreferredSize(new Dimension(Integer.MAX_VALUE, 20));
@@ -510,184 +476,16 @@ public class App {
                 alarmButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 20));
                 
                 
-                
-                
-                alarmButton.addActionListener(new ActionListener() {
-                	
-                	@Override
-                	public void actionPerformed(ActionEvent e) {
-                		
-                			
-                		
-                		if (alarmFrameCount == 0) {
-                			
-                			editButton.setEnabled(false);
-                			alarmButton.setEnabled(false);
-                			
-                			JFrame alarmFrame = new JFrame(coin.getSymbol() + " Alarm");
-                    		alarmFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-                    		
-                    		alarmFrameCount++;
-                    		
-                    		
-                    		alarmFrame.addWindowListener(new WindowAdapter() {
-                    			
-                    			@Override
-                    			public void windowClosed(WindowEvent e) {
-                    				
-                    				alarmButton.setEnabled(true);
-                    				editButton.setEnabled(true);
-                    				alarmFrameCount = 0;
-                    						
-                    			}
-                    			
-    						});
-
-                    		JPanel labelPanel = new JPanel();
-                    		JLabel label = new JLabel("Above/Below");
-                    		
-                    		labelPanel.add(label);
-                    		
-                            alarmFrame.setVisible(true);
-                            alarmFrame.setSize(500, 280);
-                            
-                            JPanel alarmPanel = new JPanel();
-                            
-                          	StringBuilder aboveValue = new StringBuilder();
-                          	StringBuilder belowValue = new StringBuilder();
-                            
-                            if (priceCheck.get(coin.getUuid()) != null) {
-                            	
-                            	aboveValue.setLength(0);
-                            	belowValue.setLength(0);
-                            	
-                            	aboveValue.append(String.valueOf(priceCheck.get(coin.getUuid())[0]));
-                            	belowValue.append(String.valueOf(priceCheck.get(coin.getUuid())[1]));
-                            	
-                            }
-                            
-                            JTextField abovePrice = new JTextField(aboveValue.toString(), 10);
-                            JTextField belowPrice = new JTextField(belowValue.toString(), 10);
-                            
-                            
-                            JButton submitPrices = new JButton("Submit");
-                            
-                            
-                            
-                            
-                            
-                            submitPrices.addActionListener(new ActionListener() {
-                            	
-                            	@Override
-                            	public void actionPerformed(ActionEvent e) {
-                            		
-                            		Double[] thresholds = new Double[2];
-                            		
-                            		try {
-										
-                            			double abovePriceDouble = Double.parseDouble(abovePrice.getText());
-                            			
-                            			if (abovePriceDouble > coin.getPrice()) { 
-                            				
-                            				thresholds[0] = abovePriceDouble;
-                            				JOptionPane.showMessageDialog(null, "Above price set");
-                            				
-                            			} else {
-                            				
-                            				abovePrice.setText("");
-                            				JOptionPane.showMessageDialog(null, "Must be above current price");
-                            				
-                            			}
-                            			
-                            			
-                            			
-                            			
-									} catch (Exception e2) {
-										
-										if (!abovePrice.getText().isEmpty()) {
-											JOptionPane.showMessageDialog(null, "Above price must be a number");
-										}
-										
-										abovePrice.setText("");
-										
-										
-									}
-                            		
-                            		try {
-										
-                            		
-                            			double belowPriceDouble = Double.parseDouble(belowPrice.getText());
-                            			
-                            			
-                            			
-                            			if (belowPriceDouble < coin.getPrice()) { 
-                            				
-                            				thresholds[1] = belowPriceDouble;
-                            				JOptionPane.showMessageDialog(null, "Below price set");
-                            				
-                            			} else {
-                            				
-                            				belowPrice.setText("");
-                            				JOptionPane.showMessageDialog(null, "Must be below current price");
-                            				
-                            			}
-                            			
-									} catch (Exception e2) {
-										
-										if (!belowPrice.getText().isEmpty()) {
-											JOptionPane.showMessageDialog(null, "Below price must be a number");
-										}
-										
-										belowPrice.setText("");
-										
-										
-									}
-                            		
-                            		priceCheck.put(coin.getUuid(), thresholds);
-                            		
-                                    
-                            		
-                            	}
-                            	
-                            });
-                            
-                            alarmPanel.add(labelPanel);
-                            alarmPanel.add(abovePrice);
-                            alarmPanel.add(belowPrice);
-                            alarmPanel.add(submitPrices);
-                            
-                            alarmFrame.add(alarmPanel);
-                            
-                		}
-                		
-                		
-                	}
-                });
+                alarm(alarmButton, editButton, coin);
                 
                 checkPrices(coin);
                 
-                // populating the coin panel
-                
-                JLabel coinLabel = new JLabel(labelHtml);
-                coinLabel.setVerticalAlignment(JLabel.TOP);
-                
-                JPanel labelButtonPanel = new JPanel(new BorderLayout());
-                labelButtonPanel.add(coinLabel, BorderLayout.CENTER);
-                labelButtonPanel.add(alarmButton, BorderLayout.NORTH);
-                
-                JPanel coinPanel = new JPanel(new BorderLayout());
-                
-                coinPanel.add(labelButtonPanel, BorderLayout.NORTH);
-                coinPanel.add(chartPanelWrapper, BorderLayout.CENTER);
-                coinPanel.setPreferredSize(new Dimension(200, 100));
-                
-                
-                panel.add(coinPanel); 
+                monitoringPanel.add(populateCoinPanel(coin, chartPanelWrapper, alarmButton, min, max)); 
 
 
             }
 
-            panel.revalidate(); 
+            monitoringPanel.revalidate(); 
 
             
             if (intervalText.length() <= 0) {
@@ -699,7 +497,284 @@ public class App {
             
         }
     }
+    
+    
+    public static JFreeChart populateChart(TimeSeries series, JPanel panel, Coin coin) {
+    	
+    	TimeSeriesCollection dataset = new TimeSeriesCollection(series); 
 
+        JFreeChart chart = ChartFactory.createTimeSeriesChart(
+                null, 
+                null, 
+                null, 
+                dataset, 
+                false, 
+                false, 
+                false 
+        );
+
+        XYPlot plot = (XYPlot) chart.getPlot(); 
+        panel.setBackground(Color.WHITE);
+        plot.setBackgroundPaint(panel.getBackground()); 
+        plot.setDomainGridlinePaint(Color.LIGHT_GRAY); 
+        plot.setRangeGridlinePaint(Color.LIGHT_GRAY); 
+        plot.setOutlinePaint(null); 
+        
+        if (coin.getChange() > 0) {
+        	
+        	XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer) plot.getRenderer();
+            renderer.setSeriesPaint(0, Color.GREEN);
+        
+        } else {
+        
+        	XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer) plot.getRenderer();
+            renderer.setSeriesPaint(0, Color.RED);
+        
+        }
+        
+        
+        
+        plot.getDomainAxis().setVisible(false);
+        
+        return chart;
+    	
+    }
+    
+    
+    public static JPanel populateCoinPanel(Coin coin, JPanel chartPanelWrapper, JButton alarmButton, double min, double max) {
+    	
+    	 double coinPrice = Double.valueOf(coin.getPrice());
+         
+         JLabel coinLabel = new JLabel(populateLabel(coinPrice, min, max, coin));
+         coinLabel.setVerticalAlignment(JLabel.TOP);
+         
+         JPanel labelButtonPanel = new JPanel(new BorderLayout());
+         labelButtonPanel.add(coinLabel, BorderLayout.CENTER);
+         labelButtonPanel.add(alarmButton, BorderLayout.NORTH);
+         
+         JPanel coinPanel = new JPanel(new BorderLayout());
+         
+         coinPanel.add(labelButtonPanel, BorderLayout.NORTH);
+         coinPanel.add(chartPanelWrapper, BorderLayout.CENTER);
+         coinPanel.setPreferredSize(new Dimension(200, 100));
+         
+         return coinPanel;
+    	
+    }
+     
+    
+    public static String populateLabel(double coinPrice, double min, double max, Coin coin) {
+    	
+    	String result = String.format("%.4f", coinPrice);
+        
+        String minStr = String.format("%.4f", min);
+        String maxStr = String.format("%.4f", max);
+        
+        String labelHtml = "<html>" +
+        
+        		"<span style=\"font-weight:bold; color: " + coin.getColor() + ";\">" + " " + coin.getSymbol() + ": " + "</span>" + 
+        		
+        		"<span style=\"color: " + (coin.getChange() < 0 ? "red" : "green") + ";\">&nbsp;" + result + "</span>  " +  
+        		
+        		"<br><span style=\"font-weight:bold; color: blue; \"> Change:</span> <span style=\"color: " + 
+
+        		(coin.getChange() < 0 ? "red" : "green") + ";\">&nbsp;" + coin.getChange() + " % </span>" +
+        		
+        		"<br><span style=\"font-weight:bold; color: green; \">High:</span>" + 
+        		
+        		"<span> &nbsp;" + maxStr + "</span>" +
+				
+				"<span style=\"font-weight:bold; color: red;\">&nbsp;&nbsp;Low:</span> &nbsp;" + minStr +
+                
+        		"</html>";
+        
+        
+        return labelHtml;
+        
+    	
+    }
+    
+    
+    public static CoinMarketData getCoinData(HttpEntity<String> entity) {
+
+    	ResponseEntity<String> response = restTemplate.exchange(
+                "https://api.coinranking.com/v2/coins?" + ids.toString() + "&timePeriod=" + trend.toString(),
+                HttpMethod.GET, entity, String.class);
+
+        Gson gson = new Gson();
+
+        JsonObject jsonObject = gson.fromJson(response.getBody(), JsonObject.class);
+        JsonObject dataObject = jsonObject.getAsJsonObject("data");
+
+        CoinMarketData coins = gson.fromJson(dataObject, CoinMarketData.class);
+        
+        return coins;
+    	
+    }
+    
+    
+    public static void alarm(JButton alarmButton, JButton editButton, Coin coin) {
+    	
+    	alarmButton.addActionListener(new ActionListener() {
+        	
+        	@Override
+        	public void actionPerformed(ActionEvent e) {
+        		
+        			
+        		
+        		if (alarmFrameCount == 0) {
+        			
+        			editButton.setEnabled(false);
+        			alarmButton.setEnabled(false);
+        			
+        			JFrame alarmFrame = new JFrame(coin.getSymbol() + " Alarm");
+            		alarmFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+            		
+            		alarmFrameCount++;
+            		
+            		
+            		alarmFrame.addWindowListener(new WindowAdapter() {
+            			
+            			@Override
+            			public void windowClosed(WindowEvent e) {
+            				
+            				alarmButton.setEnabled(true);
+            				editButton.setEnabled(true);
+            				alarmFrameCount = 0;
+            						
+            			}
+            			
+					});
+
+            		JPanel labelPanel = new JPanel();
+            		JLabel label = new JLabel("Above/Below");
+            		
+            		labelPanel.add(label);
+            		
+                    alarmFrame.setVisible(true);
+                    alarmFrame.setSize(500, 280);
+                    
+                    JPanel alarmPanel = new JPanel();
+                    
+                  	StringBuilder aboveValue = new StringBuilder();
+                  	StringBuilder belowValue = new StringBuilder();
+                    
+                    if (priceCheck.get(coin.getUuid()) != null) {
+                    	
+                    	aboveValue.setLength(0);
+                    	belowValue.setLength(0);
+                    	
+                    	aboveValue.append(String.valueOf(priceCheck.get(coin.getUuid())[0]));
+                    	belowValue.append(String.valueOf(priceCheck.get(coin.getUuid())[1]));
+                    	
+                    }
+                    
+                    JTextField abovePrice = new JTextField(aboveValue.toString(), 10);
+                    JTextField belowPrice = new JTextField(belowValue.toString(), 10);
+                    
+                    
+                    JButton submitPrices = new JButton("Submit");
+                    
+                    
+                    submitPrices(submitPrices, abovePrice, belowPrice, coin);
+                    
+                    
+                    
+                    
+                    alarmPanel.add(labelPanel);
+                    alarmPanel.add(abovePrice);
+                    alarmPanel.add(belowPrice);
+                    alarmPanel.add(submitPrices);
+                    
+                    alarmFrame.add(alarmPanel);
+                    
+        		}
+        		
+        		
+        	}
+        });
+    	
+    }
+    
+    
+    public static void submitPrices(JButton submitPrices, JTextField abovePrice, JTextField belowPrice, Coin coin) {
+    	
+    	submitPrices.addActionListener(new ActionListener() {
+        	
+        	@Override
+        	public void actionPerformed(ActionEvent e) {
+        		
+        		Double[] thresholds = new Double[2];
+        		
+        		try {
+					
+        			double abovePriceDouble = Double.parseDouble(abovePrice.getText());
+        			
+        			if (abovePriceDouble > coin.getPrice()) { 
+        				
+        				thresholds[0] = abovePriceDouble;
+        				JOptionPane.showMessageDialog(null, "Above price set");
+        				
+        			} else {
+        				
+        				abovePrice.setText("");
+        				JOptionPane.showMessageDialog(null, "Must be above current price");
+        				
+        			}
+        			
+        			
+        			
+        			
+				} catch (Exception e2) {
+					
+					if (!abovePrice.getText().isEmpty()) {
+						JOptionPane.showMessageDialog(null, "Above price must be a number");
+					}
+					
+					abovePrice.setText("");
+					
+					
+				}
+        		
+        		try {
+					
+        		
+        			double belowPriceDouble = Double.parseDouble(belowPrice.getText());
+        			
+        			
+        			
+        			if (belowPriceDouble < coin.getPrice()) { 
+        				
+        				thresholds[1] = belowPriceDouble;
+        				JOptionPane.showMessageDialog(null, "Below price set");
+        				
+        			} else {
+        				
+        				belowPrice.setText("");
+        				JOptionPane.showMessageDialog(null, "Must be below current price");
+        				
+        			}
+        			
+				} catch (Exception e2) {
+					
+					if (!belowPrice.getText().isEmpty()) {
+						JOptionPane.showMessageDialog(null, "Below price must be a number");
+					}
+					
+					belowPrice.setText("");
+					
+					
+				}
+        		
+        		priceCheck.put(coin.getUuid(), thresholds);
+        		
+                
+        		
+        	}
+        	
+        });
+    	
+    }
 
 
     public static Map<String, String> search(String query) {
@@ -740,6 +815,7 @@ public class App {
     	 
     }
     
+    
     public static Map<String, String> searchDatabase(String query) {
     	
     	Map<String, String> values = new HashMap<>();
@@ -770,6 +846,7 @@ public class App {
     	}
     	
     }
+    
     
     public static void checkPrices(Coin coin) {
     	
