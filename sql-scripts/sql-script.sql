@@ -1,0 +1,7 @@
+CREATE DATABASE IF NOT EXISTS `stock_ticker`;
+
+CREATE TABLE IF NOT EXISTS `stock_ticker`.`search`(
+	`id` INT NOT NULL AUTO_INCREMENT,
+    `coin_name` VARCHAR(45) NULL DEFAULT NULL,
+    `uuid` VARCHAR(55) NULL DEFAULT NULL,
+    PRIMARY KEY (`id`))
