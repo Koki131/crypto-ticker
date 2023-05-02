@@ -34,7 +34,7 @@ public class FindCoins {
 
 	public Map<String, String> search(String query, HttpHeaders headers, RestTemplate restTemplate) {
 		 
-		 Map<String, String> values = new HashMap<>();
+		 	Map<String, String> values = new HashMap<>();
 	    	
 	        
 	        HttpEntity<String> entity = new HttpEntity<>(headers);
