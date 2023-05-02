@@ -63,7 +63,7 @@ import com.stockticker.model.CoinMarketData;
 public class App {
 	
 	
-	private static final String API_KEY = "YOUR API KEY";
+	private static final String API_KEY = "coinranking606c9f8e4a383ec578a50f6461ddf63236c9916491e118cf";
 	
 	private static StringBuilder ids = new StringBuilder();
 	
