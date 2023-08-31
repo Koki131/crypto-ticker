@@ -2,26 +2,15 @@ package com.stockticker.demo;
 
 
 
-import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.GridLayout;
-import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
@@ -31,39 +20,19 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import javax.swing.SwingWorker;
-import javax.swing.border.Border;
 
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.jfree.chart.ChartFactory;
-import org.jfree.chart.ChartPanel;
-import org.jfree.chart.JFreeChart;
-import org.jfree.chart.plot.XYPlot;
-import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
-import org.jfree.data.time.Minute;
-import org.jfree.data.time.TimeSeries;
-import org.jfree.data.time.TimeSeriesCollection;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.stockticker.alarm.Alarm;
-import com.stockticker.connection.HibernateUtil;
-import com.stockticker.dao.SearchDAO;
-import com.stockticker.dao.SearchDAOImpl;
-import com.stockticker.entity.Search;
-import com.stockticker.model.Coin;
-import com.stockticker.model.CoinMarketData;
+
 
 
 public class App {
 	
 	
-	private static final String API_KEY = "coinranking606c9f8e4a383ec578a50f6461ddf63236c9916491e118cf";
+	private static String API_KEY = "";
 	
 	private static StringBuilder ids = new StringBuilder();
 	
@@ -82,10 +51,6 @@ public class App {
 	private static List<String> selectedTextList = new ArrayList<>();
 	
 	private static Map<String, String> coinSearch = new HashMap<>(); 
-	
-	private static SearchDAO searchDao = new SearchDAOImpl();
-	
-	private static SessionFactory sessionFactory = HibernateUtil.getSessionFactory();
 	
 	private static final String[] trends = {"1h", "3h", "12h", "24h", "7d", "30d", "3m", "1y", "3y", "5y"};
 	
@@ -119,6 +84,15 @@ public class App {
         
         JPanel intervalPanel = new JPanel();
         JPanel intervalTextPanel = new JPanel();
+        
+        // custom api key
+        
+        JLabel apiLabel = new JLabel("Enter API key:");
+        JTextField apiField = new JTextField(20);
+        JButton submitKey = new JButton("Submit");
+        
+        
+        
         
         JLabel inputLabel = new JLabel("Enter Coin Name:");
         JTextField inputField = new JTextField(20);
@@ -162,11 +136,13 @@ public class App {
         JLabel defaultInterval = new JLabel("Default 60 seconds");
         
         
-        
+        panel.add(apiLabel);
+        panel.add(submitKey);
+        panel.add(apiField);
         panel.add(inputLabel);
+        panel.add(searchButton);
         panel.add(inputField);
         panel.add(startMonitoring);
-        panel.add(searchButton);
         panel.add(comboBox);
         panel.add(scrollPane);
         panel.add(trendLabel);
@@ -181,8 +157,42 @@ public class App {
         frame.add(panel);
         frame.setVisible(true);
         
+        setEnabled(false, inputLabel, searchButton, inputField, comboBox, scrollPane, 
+				trendLabel, undoButton, trendBox, defaultInterval, intervalField, intervalSubmit);
+
+        submitKey.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				
+				API_KEY = apiField.getText();
+				apiField.setText("");
+				
+				if (isValidKey(API_KEY)) {
+					
+					JOptionPane.showInternalMessageDialog(null, "Valid API key");
+					
+					setEnabled(true, inputLabel, searchButton, inputField, comboBox, scrollPane, 
+							trendLabel, undoButton, trendBox, defaultInterval, intervalField, intervalSubmit);
+					
+					apiLabel.setVisible(false);
+					apiField.setVisible(false);
+					submitKey.setVisible(false);
+					
+				} else {
+					
+					JOptionPane.showInternalMessageDialog(null, "Invalid API key");
+					
+					setEnabled(false, inputLabel, searchButton, inputField, comboBox, scrollPane, 
+							trendLabel, undoButton, trendBox, defaultInterval, intervalField, intervalSubmit);
+					
+				}
+				
+			}
+		});
         
-        CoinMonitor coinMonitor = new CoinMonitor(searchDao, sessionFactory, headers, restTemplate, searchButton, comboBox, inputField, selected, startMonitoring,
+        
+        CoinMonitor coinMonitor = new CoinMonitor(headers, restTemplate, searchButton, comboBox, inputField, selected, startMonitoring,
 				undoButton, trendBox, frame, edit, intervalSubmit, intervalField, intervalText, trend, ids, selectedText,
 				idsList, selectedTextList, coinSearch, priceCheck, alarmFrameCount);
         
@@ -199,6 +209,61 @@ public class App {
     		box.addItem(trend);
     		
     	}
+    	
+    }
+    
+    public static boolean isValidKey(String apiKey) {
+    	
+    	
+    	if (apiKey.length() <= 0) {
+    		
+    		return false;
+    	
+    	}
+    	
+		HttpHeaders headers = new HttpHeaders();
+		
+		headers.set("Content-Type", "application/json");
+        headers.set("x-access-token", apiKey);
+        
+    	
+    	HttpEntity<String> entity = new HttpEntity<>(headers);
+    	
+    	
+    	try {
+    		
+            ResponseEntity<String> response = restTemplate.exchange(
+            		"https://api.coinranking.com/v2/search-suggestions?query=bitcoin", 
+            		HttpMethod.GET, entity, String.class);
+                 
+		} catch (Exception e) {
+			
+			return false;
+			
+		}
+
+        
+        
+        
+        return true;
+    	
+    }
+    
+    public static void setEnabled(boolean enabled, JLabel inputLabel, JButton searchButton, JTextField inputField, JComboBox<String> comboBox, JScrollPane scrollPane,
+    		JLabel trendLabel, JButton undoButton, JComboBox<String> trendBox, JLabel interval, JTextField intervalField, JButton intervalSubmit) {
+    	
+
+    	inputLabel.setEnabled(enabled);
+    	searchButton.setEnabled(enabled);
+    	inputField.setEnabled(enabled);
+    	comboBox.setEnabled(enabled);
+    	scrollPane.setEnabled(enabled);
+    	trendLabel.setEnabled(enabled);
+    	undoButton.setEnabled(enabled);
+    	trendBox.setEnabled(enabled);
+    	interval.setEnabled(enabled);
+    	intervalField.setEnabled(enabled);
+    	intervalSubmit.setEnabled(enabled);
     	
     }
 }

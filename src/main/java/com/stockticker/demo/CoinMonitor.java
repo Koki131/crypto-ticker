@@ -4,7 +4,6 @@ import java.awt.BorderLayout;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -17,16 +16,12 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingWorker;
 
-import org.hibernate.SessionFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.client.RestTemplate;
 
-import com.stockticker.dao.SearchDAO;
 
 public class CoinMonitor {
-	
-	private SearchDAO searchDao;
-	private SessionFactory sessionFactory;
+
 	private StringBuilder selectedText;	
 	private List<String> idsList;
 	private List<String> selectedTextList;
@@ -52,7 +47,7 @@ public class CoinMonitor {
 	protected int alarmFrameCount;
 	
 
-	public CoinMonitor(SearchDAO searchDao, SessionFactory sessionFactory, HttpHeaders headers,
+	public CoinMonitor(HttpHeaders headers,
 			RestTemplate restTemplate, JButton searchButton, JComboBox<String> comboBox, JTextField inputField,
 			JTextArea selected, JButton startMonitoring, JButton undoButton, JComboBox<String> trendBox, JFrame frame,
 			JButton edit, JButton intervalSubmit, JTextField intervalField, StringBuilder intervalText,
@@ -60,9 +55,7 @@ public class CoinMonitor {
 			List<String> selectedTextList, Map<String, String> coinSearch, Map<String, Double[]> priceCheck,
 			int alarmFrameCount) {
 		
-		
-		this.searchDao = searchDao;
-		this.sessionFactory = sessionFactory;
+
 		this.headers = headers;
 		this.restTemplate = restTemplate;
 		this.searchButton = searchButton;
@@ -187,7 +180,7 @@ public class CoinMonitor {
                     protected Void doInBackground() throws Exception {
                         try {
                         	
-                        	MonitorUtility utility = new MonitorUtility(searchDao, sessionFactory, headers, restTemplate, searchButton, comboBox, inputField, selected, startMonitoring,
+                        	MonitorUtility utility = new MonitorUtility(headers, restTemplate, searchButton, comboBox, inputField, selected, startMonitoring,
                     				undoButton, trendBox, frame, edit, intervalSubmit, intervalField, intervalText, trend, ids, selectedText,
                     				idsList, selectedTextList, coinSearch, priceCheck, alarmFrameCount);
                         	
@@ -306,7 +299,7 @@ public class CoinMonitor {
 
 	public void searchForCoins() {
 		
-		FindCoins findCoins = new FindCoins(searchDao, sessionFactory);
+		FindCoins findCoins = new FindCoins();
 		
 		searchButton.addActionListener(new ActionListener() {
         	
@@ -316,14 +309,17 @@ public class CoinMonitor {
                 String input = inputField.getText();
 
                 
-                if (findCoins.searchDatabase(input).isEmpty()) {
+                if (findCoins.searchFile(input).isEmpty()) {
                 	
                 	System.out.println("API SEARCH");
-                	coinSearch = findCoins.search(input, headers, restTemplate);
+                	
+                	
+					coinSearch = findCoins.search(input, headers, restTemplate);
+					
                 } else {
                 	
-                	System.out.println("DATABASE SEARCH");
-                	coinSearch = findCoins.searchDatabase(input);
+                	System.out.println("FILE SEARCH");
+                	coinSearch = findCoins.searchFile(input);
                 }
                 
                 

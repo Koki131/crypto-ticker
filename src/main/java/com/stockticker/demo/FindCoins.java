@@ -1,11 +1,13 @@
 package com.stockticker.demo;
 
 
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -14,27 +16,17 @@ import org.springframework.web.client.RestTemplate;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.stockticker.dao.SearchDAO;
-import com.stockticker.entity.Search;
 import com.stockticker.model.Coin;
 import com.stockticker.model.CoinMarketData;
 
 public class FindCoins {
 
 	
-	private SearchDAO searchDao;
-	private SessionFactory sessionFactory;
 	
-	
-	
-	public FindCoins(SearchDAO searchDao, SessionFactory sessionFactory) {
-		this.searchDao = searchDao;
-		this.sessionFactory = sessionFactory;
-	}
 
 	public Map<String, String> search(String query, HttpHeaders headers, RestTemplate restTemplate) {
 		 
-		 Map<String, String> values = new HashMap<>();
+		 	Map<String, String> values = new HashMap<>();
 	    	
 	        
 	        HttpEntity<String> entity = new HttpEntity<>(headers);
@@ -50,45 +42,113 @@ public class FindCoins {
 	        
 	        CoinMarketData coins = gson.fromJson(dataObject, CoinMarketData.class);
 	        
+	        // Create a coins.json file to save coins, every concurrent search is additive
 	        
-	        Session session = sessionFactory.getCurrentSession();
+	        try {
+	        	
+	        	File coinsFile = new File("coins.json");
+	        	
+	        	if (!coinsFile.exists()) {
+	        		
+	        		FileWriter file = new FileWriter("coins.json");
+		        	
+		        	gson.toJson(coins, file);
+		        	file.close();
+		        	
+	        	} else {
+	        		
+	        		FileReader reader = new FileReader("coins.json");
+	        		
+	        		CoinMarketData existingData = gson.fromJson(reader, CoinMarketData.class);
+	        		 
+	        		existingData.getCoins().addAll(coins.getCoins());
+	        		
+	        		reader.close();
+	        		
+	        		FileWriter writer = new FileWriter("coins.json");
+	        		gson.toJson(existingData, writer);
+	        		writer.close();
+	        		
+	        	}
+	        	
+	        	
+	        	
+			} catch (Exception e) {
+				
+				e.printStackTrace();
+			
+			}
 	        
-	        session.beginTransaction();
 	        
 	        for (Coin coin : coins.getCoins()) {
-	        	   	
-	        	searchDao.save(new Search(coin.getName(), coin.getUuid()));
 	        	
 	        	values.put(coin.getName(), coin.getUuid());
 	        	
 	        }
 	        
-	        session.getTransaction().commit();
-	        
+
 	        
 	        return values;
 		 
 	 }
 
-	 public Map<String, String> searchDatabase(String query) {
+
+	 public Map<String, String> searchFile(String query) {
 		 
-		 	Map<String, String> values = new HashMap<>();
+		Map<String, String> values = new HashMap<>();
+		
+		Gson gson = new Gson();
+	 	
+		
+		FileReader reader = null;
+		
+		CoinMarketData coins = null;
+		
+	    try {
 	    	
-	    	Session session = sessionFactory.getCurrentSession();
+	    	File file = new File("coins.json");
 	    	
-	    	session.beginTransaction();
+	    	if (file.exists()) {
 	    	
-	    	for (Search search : searchDao.findAllByName(query)) {
+	    		reader = new FileReader("coins.json");
+
+	    	    coins = gson.fromJson(reader, CoinMarketData.class);
 	    		
-	    		values.put(search.getCoinName(), search.getUuid());
-	    		
+		        reader.close();
 	    	}
 	    	
-	    	session.getTransaction().commit();
+	        
+	        
+	    } catch (IOException e) {
 	    	
-	    	
-	    	return values;
-		 
+	        e.printStackTrace();
+	    
+	    }
+	
+	    
+	    String lowerQuery = query.toLowerCase();
+        
+        
+        
+        if (coins != null) {
+        	
+        	for (Coin coin : coins.getCoins()) {
+            	
+            	if (coin.getName().toLowerCase().startsWith(lowerQuery)) {
+            		values.put(coin.getName(), coin.getUuid());
+            	}
+            	
+            }
+        }
+        
+        
+	    
+        
+       return values;
+        
+	       
 	 }
+	 
+	
 	 
 }

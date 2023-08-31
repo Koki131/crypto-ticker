@@ -1,7 +1,6 @@
 package com.stockticker.model;
 
 import java.util.Arrays;
-import java.util.List;
 
 public class Coin {
 
