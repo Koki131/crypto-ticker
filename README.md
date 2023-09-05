@@ -8,6 +8,7 @@ Clone the repository
 ```
 $ git clone https://github.com/Koki131/crypto-ticker.git
 ```
+Import project
 
 Run the app from IDE or run stock-ticker.jar Java 17+ required
 
