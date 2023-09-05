@@ -215,7 +215,7 @@ public class App {
     public static boolean isValidKey(String apiKey) {
     	
     	
-    	if (apiKey.length() <= 0) {
+    	if (apiKey.length() == 0) {
     		
     		return false;
     	
@@ -242,13 +242,10 @@ public class App {
 			
 		}
 
-        
-        
-        
         return true;
     	
     }
-    
+
     public static void setEnabled(boolean enabled, JLabel inputLabel, JButton searchButton, JTextField inputField, JComboBox<String> comboBox, JScrollPane scrollPane,
     		JLabel trendLabel, JButton undoButton, JComboBox<String> trendBox, JLabel interval, JTextField intervalField, JButton intervalSubmit) {
     	
