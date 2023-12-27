@@ -84,15 +84,15 @@ public class CoinMonitor {
 	public void run() {
 		
 		searchForCoins();
-        
+
         populateComboBox();
-              
+
         undo();
         
         trend();
         
         startMonitoring();
-        
+
         interval();
 		
 	}
@@ -188,7 +188,7 @@ public class CoinMonitor {
                         	utility.monitorCoins(label, coinFrame, edit);
                         
                         } catch (InterruptedException ex) {
-                        	
+
                         	Thread.currentThread().interrupt();
                         
                         }
@@ -310,7 +310,7 @@ public class CoinMonitor {
 
                 
                 if (findCoins.searchFile(input).isEmpty()) {
-                	
+
                 	System.out.println("API SEARCH");
                 	
                 	

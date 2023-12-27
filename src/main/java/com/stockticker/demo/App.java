@@ -196,7 +196,7 @@ public class App {
         CoinMonitor coinMonitor = new CoinMonitor(headers, restTemplate, searchButton, comboBox, inputField, selected, startMonitoring,
 				undoButton, trendBox, frame, edit, intervalSubmit, intervalField, intervalText, trend, ids, selectedText,
 				idsList, selectedTextList, coinSearch, priceCheck, alarmFrameCount);
-        
+
         coinMonitor.run();
          
         

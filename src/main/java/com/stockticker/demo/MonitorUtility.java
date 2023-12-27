@@ -61,8 +61,8 @@ public class MonitorUtility extends CoinMonitor {
         JPanel monitoringPanel = new JPanel(new GridLayout(0, 2, 10, 10));
         
         existingWindow.add(monitoringPanel, BorderLayout.CENTER);
-        
-         
+
+
         while (true) {
 
 			CoinMarketData coins = getCoinData(entity);
@@ -71,10 +71,10 @@ public class MonitorUtility extends CoinMonitor {
 
             for (Coin coin : coins.getCoins()) {
 
-				double[] sparkline = coin.getSparkline();
+				Double[] sparkline = coin.getSparkline();
 
-				double max = sparkline[0];
-                double min = sparkline[0];
+				Double max = sparkline[0];
+				Double min = sparkline[0];
 
 
 				TimeSeries series = new TimeSeries(coin.getSymbol());
@@ -82,10 +82,13 @@ public class MonitorUtility extends CoinMonitor {
                 for (int i = 0; i < sparkline.length; i++) {
 
 					Date date = new Date(System.currentTimeMillis() - (sparkline.length - i) * 60000);
-                    series.add(new Minute(date), sparkline[i]); 
-                    
-                    max = Math.max(max, sparkline[i]);
-                    min = Math.min(min, sparkline[i]);
+
+					if (sparkline[i] != null) {
+						series.add(new Minute(date), sparkline[i]);
+						max = Math.max(max, sparkline[i]);
+						min = Math.min(min, sparkline[i]);
+					}
+
                     
                 }
                 
@@ -506,11 +509,16 @@ public class MonitorUtility extends CoinMonitor {
 		JsonObject jsonObject = gson.fromJson(response.getBody(), JsonObject.class);
 		JsonObject dataObject = jsonObject.getAsJsonObject("data");
 
-		CoinMarketData coins = gson.fromJson(dataObject, CoinMarketData.class);
+		CoinMarketData coins = null;
 
+		try {
+			coins = gson.fromJson(dataObject, CoinMarketData.class);
+		} catch (Exception e) {
+			e.printStackTrace();
+
+		}
 
 		return coins;
-
 	}
 
 	public List<Children> getRedditData(Coin coin) {

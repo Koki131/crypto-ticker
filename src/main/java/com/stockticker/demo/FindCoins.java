@@ -39,9 +39,11 @@ public class FindCoins {
 	        Gson gson = new Gson();
 	        JsonObject jsonObject = gson.fromJson(response.getBody(), JsonObject.class);
 	        JsonObject dataObject = jsonObject.getAsJsonObject("data");
-	        
+
+
 	        CoinMarketData coins = gson.fromJson(dataObject, CoinMarketData.class);
-	        
+
+
 	        // Create a coins.json file to save coins, every concurrent search is additive
 	        
 	        try {

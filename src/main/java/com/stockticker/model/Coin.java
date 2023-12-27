@@ -8,7 +8,7 @@ public class Coin {
 	private double price;
 	private String uuid;
 	private String name;
-	private double[] sparkline;
+	private Double[] sparkline;
 	private double change;
 	private String color;
 	
@@ -63,11 +63,11 @@ public class Coin {
 		this.change = change;
 	}
 
-	public double[] getSparkline() {
+	public Double[] getSparkline() {
 		return sparkline;
 	}
 
-	public void setSparkline(double[] sparkline) {
+	public void setSparkline(Double[] sparkline) {
 		this.sparkline = sparkline;
 	}
 

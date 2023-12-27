@@ -1,17 +1,22 @@
 package com.stockticker.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class CoinMarketData {
 
 	
-	private List<Coin> coins;
+	private ArrayList<Coin> coins;
 
-	public List<Coin> getCoins() {
+	public CoinMarketData() {
+
+	}
+
+	public ArrayList<Coin> getCoins() {
 		return coins;
 	}
 
-	public void setCoins(List<Coin> coins) {
+	public void setCoins(ArrayList<Coin> coins) {
 		this.coins = coins;
 	}
 
